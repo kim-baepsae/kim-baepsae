@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뱁새와 함께하는 진정한 사랑꾼 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .question-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+        .question-card h3 {
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .radio-label {
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .radio-input:checked + .radio-label {
+            background-color: #d1d5db; /* A lighter gray for selected state */
+            border-color: #6b7280; /* Darker gray border for selected state */
+        }
+        .result-card {
+            background-color: #ffffff;
+        }
+        .progress-bar-bg {
+            background-color: #e5e7eb;
+        }
+        .progress-bar-fill {
+            transition: width 0.5s ease-in-out;
+        }
+        .gemini-result {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto space-y-8">
+        <!-- 메인 타이틀 및 설명 -->
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">뱁새와 함께하는 진정한 사랑꾼 테스트</h1>
+            <p class="text-gray-600">당신은 사랑을 주고받는 데 얼마나 진심인가요?</p>
+            <p class="text-gray-500 text-sm mt-2">다음 체크리스트를 솔직하게 답하고 결과를 확인하세요.</p>
+        </header>
+
+        <!-- 테스트 섹션 -->
+        <section id="test-section" class="space-y-6">
+            <!-- 질문이 여기에 동적으로 생성됩니다 -->
+        </section>
+
+        <!-- 제출 버튼 -->
+        <div class="text-center">
+            <button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200">결과 보기</button>
+        </div>
+
+        <!-- 결과 섹션 (초기에는 숨겨져 있음) -->
+        <section id="result-section" class="hidden p-8 rounded-lg shadow-xl result-card">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">당신의 결과는...</h2>
+            <div id="total-score-display" class="text-center mb-8">
+                <p class="text-gray-600 text-lg">총점</p>
+                <p class="text-5xl font-bold text-blue-600 mt-1"><span id="total-score">0</span> / 100</p>
+            </div>
+            
+            <h3 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-gray-700">카테고리별 점수</h3>
+            <div id="category-scores" class="space-y-4">
+                <!-- 카테고리별 점수가 여기에 동적으로 표시됩니다 -->
+            </div>
+
+            <h3 class="text-2xl font-semibold mt-8 mb-4 border-b-2 pb-2 text-gray-700">결과 분석</h3>
+            <div id="result-message" class="text-gray-700 leading-relaxed">
+                <!-- 결과 메시지가 여기에 표시됩니다 -->
+            </div>
+
+            <!-- Gemini API를 활용한 개인화된 조언 섹션 -->
+            <div class="text-center mt-8">
+                <button id="gemini-advice-btn" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-700 transition-colors duration-200">
+                    나만을 위한 사랑 조언 받기 ✨
+                </button>
+            </div>
+            <div id="gemini-advice-result" class="mt-8 hidden p-6 rounded-lg gemini-result">
+                <p class="text-lg font-semibold text-green-800 mb-2">Gemini AI의 분석 결과</p>
+                <div id="gemini-content" class="text-gray-700">
+                    <!-- Gemini의 답변이 여기에 표시됩니다 -->
+                </div>
+                <div id="gemini-loading" class="hidden text-center text-gray-500 mt-4">
+                    <p>Gemini AI가 분석 중입니다...</p>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button onclick="window.location.reload()" class="bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-full shadow hover:bg-gray-300 transition-colors duration-200">다시 테스트하기</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 테스트 질문 데이터
+        const questions = [
+            // 1. 배려 (Care)
+            { category: "배려 (Care)", text: "나는 상대방의 행복과 성장을 진심으로 원한다.", id: "q1_1" },
+            { category: "배려 (Care)", text: "내 즐거움이나 이익보다도, 상대방의 삶의 질과 안녕에 깊은 관심을 갖고 있다.", id: "q1_2" },
+            { category: "배려 (Care)", text: "어려움을 겪는 상황에서도, 상대방을 기꺼이 돌볼 의지가 있다.", id: "q1_3" },
+            { category: "배려 (Care)", text: "나는 상대방의 잠재력을 믿으며, 그의 성장과 발전을 지지한다.", id: "q1_4" },
+            
+            // 2. 책임 (Responsibility)
+            { category: "책임 (Responsibility)", text: "나는 상대방의 감정과 요구에 주의 깊게 귀 기울이고, 적절하게 반응하려 노력한다.", id: "q2_1" },
+            { category: "책임 (Responsibility)", text: "내 선택과 행동이 상대방에게 미칠 영향에 대해 깊이 생각하고 책임감을 느낀다.", id: "q2_2" },
+            { category: "책임 (Responsibility)", text: "상대방을 돌보는 마음이 의무감이나 부담이 아닌, 자발적이고 능동적인 태도에서 나온다.", id: "q2_3" },
+            { category: "책임 (Responsibility)", text: "나는 상대방과의 관계에서 발생하는 어려움이나 고통을 회피하지 않고, 함께 마주하려 노력한다.", id: "q2_4" },
+            
+            // 3. 존중 (Respect)
+            { category: "존중 (Respect)", text: "나는 상대방이 독립적이고 고유한 개별 존재로서 자신의 방식대로 자유롭게 살아가기를 진심으로 바란다.", id: "q3_1" },
+            { category: "존중 (Respect)", text: "내가 바라는 모습대로 상대를 바꾸려 하거나 통제하려는 충동 없이, 그 사람 자체를 있는 그대로 존중한다.", id: "q3_2" },
+            { category: "존중 (Respect)", text: "상대방이 내 생각이나 기대와 다른 선택을 했을 때도, 그 선택을 이해하고 지지할 수 있다.", id: "q3_3" },
+            { category: "존중 (Respect)", text: "나는 상대방의 사적인 영역과 개성을 존중하며, 그의 고유한 비밀을 침범하려 하지 않는다.", id: "q3_4" },
+            
+            // 4. 이해 (Knowledge)
+            { category: "이해 (Knowledge)", text: "나는 그 사람의 내면세계(두려움, 기쁨, 상처, 욕구, 가치관 등)를 깊이 이해하기 위해 진지하게 노력한다.", id: "q4_1" },
+            { category: "이해 (Knowledge)", text: "상대방의 입장에서 세상을 바라보려 하고, 나와 다른 점들을 열린 마음으로 인정할 수 있다.", id: "q4_2" },
+            { category: "이해 (Knowledge)", text: "상대방을 피상적으로 아는 것을 넘어, 진정으로 '알고' 싶어 경청하고 관찰하며 배우려 한다.", id: "q4_3" },
+            { category: "이해 (Knowledge)", text: "나는 그 사람을 완벽하게 다 안다고 생각하지 않으며, 관계 속에서 계속해서 배우고 알아가려 한다.", id: "q4_4" },
+            
+            // 5. 능동성 (Activity)
+            { category: "능동성 (Activity)", text: "나는 사랑을 '받는 것'이 아니라, 내가 주체적으로 '주는 것'이자 적극적인 행위로 인식한다.", id: "q5_1" },
+            { category: "능동성 (Activity)", text: "내 자신의 불안감, 외로움, 공허함을 채우기 위해 상대방을 수단으로 이용하고 있지 않다.", id: "q5_2" },
+            { category: "능동성 (Activity)", text: "상대방을 내 소유물처럼 여기거나 통제하려는 마음 없이, 그 사람의 자유와 독립성을 존중하며 사랑할 수 있다.", id: "q5_3" },
+            { category: "능동성 (Activity)", text: "나는 상대방뿐만 아니라 나 자신을 사랑하고 존중하며, 나의 존재 가치를 스스로 인식하고 있다.", id: "q5_4" }
+        ];
+
+        // 점수 계산을 위한 값
+        const scoreValues = {
+            'strongly-agree': 5,
+            'agree': 4,
+            'neutral': 3,
+            'disagree': 2,
+            'strongly-disagree': 1
+        };
+
+        const testSection = document.getElementById('test-section');
+        const submitBtn = document.getElementById('submit-btn');
+        const resultSection = document.getElementById('result-section');
+        const totalScoreDisplay = document.getElementById('total-score');
+        const categoryScoresContainer = document.getElementById('category-scores');
+        const resultMessage = document.getElementById('result-message');
+        
+        // 새로운 UI 요소들
+        const geminiAdviceBtn = document.getElementById('gemini-advice-btn');
+        const geminiAdviceResult = document.getElementById('gemini-advice-result');
+        const geminiContent = document.getElementById('gemini-content');
+        const geminiLoading = document.getElementById('gemini-loading');
+
+        // 질문들을 그룹별로 묶기
+        const questionsByCategory = questions.reduce((acc, question) => {
+            if (!acc[question.category]) {
+                acc[question.category] = [];
+            }
+            acc[question.category].push(question);
+            return acc;
+        }, {});
+
+        // UI에 질문 생성 함수
+        function createQuestions() {
+            for (const category in questionsByCategory) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'question-card p-6 rounded-lg shadow-md';
+                categoryDiv.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4 text-blue-600">${category}</h3>
+                `;
+
+                questionsByCategory[category].forEach(q => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'mb-4';
+                    questionDiv.innerHTML = `
+                        <p class="text-lg font-semibold mb-2">${q.text}</p>
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                            ${Object.keys(scoreValues).map(value => `
+                                <input type="radio" id="${q.id}-${value}" name="${q.id}" value="${value}" class="hidden radio-input" required>
+                                <label for="${q.id}-${value}" class="radio-label flex-1 text-center py-2 px-4 rounded-full border cursor-pointer hover:bg-gray-200 transition-colors duration-200">
+                                    ${getLabelText(value)}
+                                </label>
+                            `).join('')}
+                        </div>
+                    `;
+                    categoryDiv.appendChild(questionDiv);
+                });
+                testSection.appendChild(categoryDiv);
+            }
+        }
+
+        // 라디오 버튼 텍스트 가져오는 함수
+        function getLabelText(value) {
+            switch (value) {
+                case 'strongly-agree': return '매우 그렇다';
+                case 'agree': return '그렇다';
+                case 'neutral': return '보통이다';
+                case 'disagree': return '아니다';
+                case 'strongly-disagree': return '전혀 아니다';
+                default: return '';
+            }
+        }
+
+        // 결과 계산 및 표시 함수
+        function calculateAndDisplayResults() {
+            let totalScore = 0;
+            const categoryScores = {};
+            let isAllAnswered = true;
+            let answeredQuestions = [];
+
+            // 모든 질문에 대한 응답 확인 및 점수 계산
+            for (const question of questions) {
+                const selectedAnswer = document.querySelector(`input[name="${question.id}"]:checked`);
+                if (!selectedAnswer) {
+                    isAllAnswered = false;
+                    break;
+                }
+                const score = scoreValues[selectedAnswer.value];
+                totalScore += score;
+                answeredQuestions.push({
+                    category: question.category,
+                    text: question.text,
+                    score: score
+                });
+                if (!categoryScores[question.category]) {
+                    categoryScores[question.category] = 0;
+                }
+                categoryScores[question.category] += score;
+            }
+
+            if (!isAllAnswered) {
+                const messageBox = document.createElement('div');
+                messageBox.className = "fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center";
+                messageBox.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                        <p class="text-xl font-semibold mb-4">모든 질문에 답해주세요.</p>
+                        <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-600 text-white px-4 py-2 rounded">확인</button>
+                    </div>
+                `;
+                document.body.appendChild(messageBox);
+                return;
+            }
+
+            // 총점 및 카테고리별 점수 표시
+            totalScoreDisplay.textContent = totalScore;
+            categoryScoresContainer.innerHTML = '';
+            
+            for (const category in categoryScores) {
+                const maxCategoryScore = questionsByCategory[category].length * 5;
+                const percentage = (categoryScores[category] / maxCategoryScore) * 100;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'mb-2';
+                categoryDiv.innerHTML = `
+                    <p class="font-semibold text-gray-700">${category}: ${categoryScores[category]} / ${maxCategoryScore}</p>
+                    <div class="w-full h-4 rounded-full progress-bar-bg overflow-hidden">
+                        <div class="h-full rounded-full progress-bar-fill" style="width: ${percentage}%; background-color: ${getBarColor(percentage)};"></div>
+                    </div>
+                `;
+                categoryScoresContainer.appendChild(categoryDiv);
+            }
+
+            // 결과 메시지 표시
+            resultMessage.innerHTML = getResultMessage(totalScore);
+
+            // UI 변경 (테스트 숨기기, 결과 표시)
+            testSection.classList.add('hidden');
+            submitBtn.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+
+            // 결과를 localStorage에 저장하여 Gemini API 호출 시 사용
+            localStorage.setItem('totalScore', totalScore);
+            localStorage.setItem('categoryScores', JSON.stringify(categoryScores));
+        }
+        
+        // 점수별 막대바 색상 반환 함수
+        function getBarColor(percentage) {
+            if (percentage >= 80) return '#10b981'; // Green
+            if (percentage >= 50) return '#f59e0b'; // Yellow
+            return '#ef4444'; // Red
+        }
+
+        // 총점별 결과 메시지 반환 함수
+        function getResultMessage(score) {
+            if (score >= 90) {
+                return `
+                    <p class="text-xl font-bold text-gray-800">❤️ 찐사랑 체크리스트 결과 분석 (총 20문항 기준) ❤️</p>
+                    <h4 class="text-lg font-semibold mt-4">진정한 사랑의 단계 (The Stage of True Love)</h4>
+                    <p class="mt-2">당신은 에리히 프롬이 말하는 성숙하고 진정한 사랑을 깊이 이해하고 능동적으로 실천하고 있습니다. 상대방을 독립적인 존재로 깊이 존중하며, 그들의 성장과 행복을 진심으로 바라고 책임감을 가지고 돌봅니다. 또한, 자신을 사랑하고 타인에게 능동적으로 줄 수 있는 준비가 되어 있습니다. 이 관계는 상호 성장을 가능하게 하는 깊고 의미 있는 사랑입니다. 지속적인 노력으로 이 소중한 사랑을 더욱 굳건히 지켜나가세요.</p>
+                `;
+            } else if (score >= 75) {
+                return `
+                    <p class="text-xl font-bold text-gray-800">❤️ 찐사랑 체크리스트 결과 분석 (총 20문항 기준) ❤️</p>
+                    <h4 class="text-lg font-semibold mt-4">진정한 사랑으로 나아가는 관계 (Relationship Evolving Towards True Love)</h4>
+                    <p class="mt-2">당신의 관계는 진정한 사랑으로 발전할 수 있는 매우 높은 잠재력을 가지고 있습니다. 프롬이 강조하는 사랑의 핵심 요소들을 상당 부분 이해하고 실천하고 있으며, 관계를 성숙하게 가꾸어 나가는 데 필요한 중요한 기반을 다졌습니다. 다만, 특정 영역에서 아직 의식적인 노력이 더 필요하거나, 더 깊은 이해가 요구될 수 있습니다. 어떤 질문에서 체크하지 못했는지 돌아보고, 그 부분을 적극적으로 개선하려 노력한다면 더욱 깊이 있고 풍요로운 사랑을 경험하게 될 것입니다.</p>
+                `;
+            } else if (score >= 55) {
+                return `
+                    <p class="text-xl font-bold text-gray-800">❤️ 찐사랑 체크리스트 결과 분석 (총 20문항 기준) ❤️</p>
+                    <h4 class="text-lg font-semibold mt-4">사랑을 배우고 성장하는 관계 (Learning and Growing in Love)</h4>
+                    <p class="mt-2">당신은 사랑이라는 복잡한 기술을 배워나가고 있는 중요한 과정에 있습니다. 프롬이 제시하는 사랑의 여러 요소들을 이해하고 실천하려는 의지가 분명하며, 관계를 통해 배우고 성장해 나가고 있습니다. 이 시점에서는 부족하다고 느껴지는 부분에 대해 솔직하게 마주하고, 의식적으로 개선하려는 노력이 중요합니다. 서로에게 더 많은 관심과 깊은 대화를 통해 이해의 폭을 넓히고 책임감을 다한다면, 더욱 성숙한 사랑으로 발전할 수 있습니다.</p>
+                `;
+            } else if (score >= 35) {
+                return `
+                    <p class="text-xl font-bold text-gray-800">❤️ 찐사랑 체크리스트 결과 분석 (총 20문항 기준) ❤️</p>
+                    <h4 class="text-lg font-semibold mt-4">관계의 재고 또는 새로운 시작 (Reconsidering or A New Beginning)</h4>
+                    <p class="mt-2">현재 당신의 관계는 에리히 프롬이 말하는 사랑의 본질과는 다소 거리가 있을 수 있습니다. 단순히 감정적인 끌림이나 외부적인 요소, 혹은 자신의 결핍을 채우기 위한 의존적인 관계일 가능성도 있습니다. 사랑의 핵심 요소들(배려, 책임, 존중, 이해, 능동성) 중 상당 부분에서 개선이 필요해 보입니다. 이 관계가 당신과 상대방 모두에게 진정으로 긍정적인 영향을 주고 있는지, 그리고 진정으로 발전 가능한 관계인지에 대해 깊이 고민하고 성찰해 볼 시점입니다.</p>
+                `;
+            } else {
+                return `
+                    <p class="text-xl font-bold text-gray-800">❤️ 찐사랑 체크리스트 결과 분석 (총 20문항 기준) ❤️</p>
+                    <h4 class="text-lg font-semibold mt-4">사랑이 아님 (Not Love / Superficial or Harmful Connection)</h4>
+                    <p class="mt-2">이 관계는 에리히 프롬이 정의하는 '사랑'과는 거리가 매우 멀다고 판단할 수 있습니다. 상대를 이해하고 존중하며 책임감을 가지려는 노력이 거의 없거나, 자신의 필요를 채우기 위한 수단으로 상대를 이용하고 있을 가능성이 높습니다. 이는 건강하고 성숙한 관계라기보다는 일방적이거나 피상적이며, 심지어는 해로울 수 있는 관계일 수 있습니다. 관계의 본질에 대해 깊이 성찰하고, 자신과 상대방을 위해 더 나은 방향을 적극적으로 모색해야 합니다.</p>
+                `;
+            }
+        }
+
+        // Gemini API 호출 함수
+        async function getGeminiAdvice() {
+            geminiAdviceResult.classList.remove('hidden');
+            geminiContent.innerHTML = '';
+            geminiLoading.classList.remove('hidden');
+            geminiAdviceBtn.disabled = true;
+
+            const totalScore = localStorage.getItem('totalScore');
+            const categoryScores = JSON.parse(localStorage.getItem('categoryScores'));
+
+            if (!totalScore || !categoryScores) {
+                geminiContent.innerHTML = '결과를 찾을 수 없습니다. 다시 테스트해주세요.';
+                geminiLoading.classList.add('hidden');
+                geminiAdviceBtn.disabled = false;
+                return;
+            }
+
+            const prompt = `
+                나는 에리히 프롬의 '사랑의 기술'을 기반으로 한 사랑꾼 테스트를 완료했습니다.
+                테스트의 총점은 100점 만점에 ${totalScore}점입니다.
+                각 카테고리별 점수는 다음과 같습니다:
+                - 배려 (Care): ${categoryScores['배려 (Care)']}/20점
+                - 책임 (Responsibility): ${categoryScores['책임 (Responsibility)']}/20점
+                - 존중 (Respect): ${categoryScores['존중 (Respect)']}/20점
+                - 이해 (Knowledge): ${categoryScores['이해 (Knowledge)']}/20점
+                - 능동성 (Activity): ${categoryScores['능동성 (Activity)']}/20점
+                
+                나의 점수를 바탕으로, 관계 코치처럼 친절하고 격려하는 어조로 결과에 대한 상세한 분석과 함께 개인화된 조언을 500자 내외로 제공해주세요.
+                특히 점수가 낮은 카테고리에는 구체적으로 어떤 노력을 할 수 있는지 행동 지침을 포함해주면 좋겠습니다.
+                답변은 한국어로 작성해주세요.
+            `;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    geminiContent.innerHTML = text.replace(/\n/g, '<br>');
+                } else {
+                    geminiContent.innerHTML = 'AI 답변을 생성하는 데 실패했습니다. 다시 시도해주세요.';
+                    console.error('API response structure is unexpected or content is missing', result);
+                }
+            } catch (error) {
+                console.error('Error fetching from Gemini API:', error);
+                geminiContent.innerHTML = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+            } finally {
+                geminiLoading.classList.add('hidden');
+                geminiAdviceBtn.disabled = false;
+            }
+        }
+
+        // 이벤트 리스너
+        submitBtn.addEventListener('click', calculateAndDisplayResults);
+        geminiAdviceBtn.addEventListener('click', getGeminiAdvice);
+        
+        // 페이지 로드 시 질문 생성
+        window.onload = createQuestions;
+    </script>
+</body>
+</html>
